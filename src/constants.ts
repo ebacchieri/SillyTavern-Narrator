@@ -109,11 +109,9 @@ export const DEFAULT_TASK_DESCRIPTION = `## Your Role as Narrator
 - You must generate exactly 6 distinct options, suitable for a 1d6 dice roll.
 {{/if}}
 
-## Your Task
 {{#if userInstructions}}
+## Your Task
 {{userInstructions}}
-{{else}}
-Generate 6 possible next actions for the current scene.
 {{/if}}
 
 Always respond in valid XML format, as shown in the example above.
