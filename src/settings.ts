@@ -2,8 +2,6 @@ import { ExtensionSettingsManager } from 'sillytavern-utils-lib';
 import {
   DEFAULT_ST_DESCRIPTION,
   DEFAULT_NEXT_STEPS,
-  DEFAULT_BLACKLISTED_ENTRIES,
-  DEFAULT_SUGGESTED_LOREBOOKS,
   DEFAULT_XML_DESCRIPTION,
   DEFAULT_TASK_DESCRIPTION,
 } from './constants.js';
@@ -81,16 +79,12 @@ export interface ExtensionSettings {
 export type SystemPromptKey =
   | 'stDescription'
   | 'possibleSteps'
-  | 'blackListedEntries'
-  | 'suggestedLorebooks'
   | 'responseRules'
   | 'taskDescription';
 
 export const SYSTEM_PROMPT_KEYS: Array<SystemPromptKey> = [
   'stDescription',
   'possibleSteps',
-  'blackListedEntries',
-  'suggestedLorebooks',
   'responseRules',
   'taskDescription',
 ];
@@ -98,8 +92,6 @@ export const SYSTEM_PROMPT_KEYS: Array<SystemPromptKey> = [
 export const DEFAULT_PROMPT_CONTENTS: Record<SystemPromptKey, string> = {
   stDescription: DEFAULT_ST_DESCRIPTION,
   possibleSteps: DEFAULT_NEXT_STEPS,
-  blackListedEntries: DEFAULT_BLACKLISTED_ENTRIES,
-  suggestedLorebooks: DEFAULT_SUGGESTED_LOREBOOKS,
   responseRules: DEFAULT_XML_DESCRIPTION,
   taskDescription: DEFAULT_TASK_DESCRIPTION,
 };

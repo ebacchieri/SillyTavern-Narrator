@@ -57,7 +57,11 @@ export const DEFAULT_SUGGESTED_ACTIONS = `## NEWLY SUGGESTED ACTIONS
 Description: {{#if content}}{{content}}{{else}}*No description*{{/if}}
 {{/each}}`;
 
-export const DEFAULT_XML_DESCRIPTION = `You must generate a list of exactly 6 possible actions or story events, formatted as XML. Each action must have a short title and a detailed paragraph describing a scenario that unfolds over a short timeframe.
+export const DEFAULT_XML_DESCRIPTION = `{{#if isRevising}}
+You must revise the provided action based on the user's instructions. Your response must be a single action, formatted as XML.
+{{else}}
+You must generate a list of exactly 6 possible actions or story events, formatted as XML. Each action must have a short title and a detailed paragraph describing a scenario that unfolds over a short timeframe.
+{{/if}}
 
 Your response must be wrapped in <actions> tags. Each suggestion must be wrapped in an <action> tag, containing <title> and <description> tags.
 
@@ -99,7 +103,11 @@ export const DEFAULT_TASK_DESCRIPTION = `## Your Role as Narrator
 - Each suggestion must be a detailed paragraph, not just a single sentence.
 - The events you describe should have a sense of duration, covering a short timeframe (e.g., a few minutes, an hour, or an entire scene).
 - Involve the environment, other people, or the world itself in your suggestions.
+{{#if isRevising}}
+- You must only generate a single, revised action based on the user's request.
+{{else}}
 - You must generate exactly 6 distinct options, suitable for a 1d6 dice roll.
+{{/if}}
 
 ## Your Task
 {{#if userInstructions}}

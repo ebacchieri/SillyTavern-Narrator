@@ -57,6 +57,7 @@ export async function runWorldInfoRecommendation({
   templateData['persona'] = '{{persona}}'; // ST going to replace this with the actual persona description
 
   const finalUserPrompt = userPrompt.trim();
+  templateData['isRevising'] = continueFrom?.mode === 'revise';
 
   // If we are revising, the main userInstructions in the system prompt will be empty.
   // The actual instructions will be added as a separate user message later.

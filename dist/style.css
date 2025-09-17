@@ -168,6 +168,7 @@
 #narratorPopup .entry .content {
   margin-bottom: 5px;
   color: var(--SmartThemeBodyColor);
+  white-space: pre-wrap;
 }
 #narratorPopup .actions {
   display: flex;

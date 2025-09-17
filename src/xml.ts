@@ -51,10 +51,14 @@ export function parseXMLOwn(xml: string, options: XmlParseOptions = {}): NEntry[
 
     for (const action of parsedActions) {
       if (action.description) {
+        const content = Array.isArray(action.description)
+          ? action.description.join('\n\n')
+          : action.description;
+
         actions.push({
           uid: createRandomNumber(6),
           key: [], // No triggers in the new format
-          content: action.description,
+          content: content,
           comment: action.title ?? '', // Use title as comment
           disable: false,
           keysecondary: [],

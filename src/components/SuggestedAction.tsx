@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC, useMemo, useState } from 'react';
 import { STButton, STTextarea } from 'sillytavern-utils-lib/components';
 import { NEntry } from '../types.js';
 
@@ -12,6 +12,17 @@ export interface SuggestedActionProps {
 export const SuggestedAction: FC<SuggestedActionProps> = ({ entry, onRevise, onDismiss, onPublish }) => {
   const [isRevising, setIsRevising] = useState(false);
   const [revisePrompt, setRevisePrompt] = useState('');
+
+  const formattedContent = useMemo(() => {
+    // @ts-ignore
+    const { messageFormatting } = SillyTavern.getContext();
+    if (messageFormatting) {
+      // Format the content as if it were a system message from the Narrator
+      return messageFormatting(entry.content, 'Narrator', true, false, -1);
+    }
+    // Fallback just in case
+    return entry.content.replace(/\n/g, '<br />');
+  }, [entry.content]);
 
   const handleReviseClick = async () => {
     setIsRevising(true);
@@ -47,7 +58,7 @@ export const SuggestedAction: FC<SuggestedActionProps> = ({ entry, onRevise, onD
         </STButton>
       </div>
       <h4 className="comment">{entry.comment}</h4>
-      <p className="content">{entry.content}</p>
+      <div className="content" dangerouslySetInnerHTML={{ __html: formattedContent }} />
       <div className="continue-prompt-section" style={{ marginTop: '10px' }}>
         <STTextarea
           value={revisePrompt}
