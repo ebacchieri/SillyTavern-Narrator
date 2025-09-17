@@ -37,6 +37,8 @@ Instead of just generating lore, this extension provides a set of six distinct, 
 
 This extension is designed to be highly flexible. You can customize the core prompts that guide the AI by going to the main SillyTavern settings, navigating to the **Extensions** tab, and finding the **Narrator** section. Here, you can edit the templates for the Narrator's role, the XML format rules, and more to tailor the generated results to your specific needs.
 
+<img width="1719" height="1016" alt="image" src="https://github.com/user-attachments/assets/d886b7a8-78e9-459d-b8ea-3afd2bb0e6d1" />
+
 ## Acknowledgements
 
 This extension is heavily inspired by and is a significant rework of the [SillyTavern-WorldInfo-Recommender](https://github.com/bmen25124/SillyTavern-WorldInfo-Recommender) by bmen25124. Many of the core ideas and initial code structure were adapted from that project.
