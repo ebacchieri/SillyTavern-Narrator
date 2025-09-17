@@ -27,8 +27,7 @@ Instead of just generating lore, this extension provides a set of six distinct, 
 ## How to Use
 
 1.  **Open the Narrator UI**:
-    -   Click the **Wand icon (🪄)** in the top menu bar, then click **Narrator** from the extensions list.
-    -   Alternatively, type `/narrator` into the chat input and press Enter.
+    -   Click the **Wand icon (🪄)** in the left of message box, then click **Narrator** from the extensions list.
 2.  **Configure Settings**: In the left-hand panel, select the AI connection profile you want to use and choose what context (chat history, character details, etc.) should be sent.
 3.  **Write a Prompt**: In the "Your Prompt" section, tell the Narrator what you want ideas for (e.g., *"What happens when we enter the spooky castle?"*).
 4.  **Generate Suggestions**: Click the **Send Prompt** button.
