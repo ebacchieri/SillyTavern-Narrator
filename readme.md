@@ -4,6 +4,8 @@
 
 A [SillyTavern](https://docs.sillytavern.app/) extension that acts as a dynamic Dungeon Master or Narrator's assistant. It uses a configured LLM to generate a list of creative, narrative actions that can happen next in your story, helping you overcome writer's block and drive the plot forward in interesting ways.
 
+<img width="1699" height="1102" alt="image" src="https://github.com/user-attachments/assets/dfc9723b-92d2-47de-88af-8c1bee3291c4" />
+
 Instead of just generating lore, this extension provides a set of six distinct, paragraph-long scenarios suitable for a 1d6 dice roll, giving you a range of creative options to choose from.
 
 ## Features
