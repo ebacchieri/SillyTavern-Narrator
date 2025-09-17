@@ -51,9 +51,14 @@ export function parseXMLOwn(xml: string, options: XmlParseOptions = {}): NEntry[
 
     for (const action of parsedActions) {
       if (action.description) {
-        const content = Array.isArray(action.description)
-          ? action.description.join('\n\n')
-          : action.description;
+        const content = (
+          Array.isArray(action.description)
+            ? action.description.join('\n\n')
+            : action.description
+        )
+          .split('\n')
+          .map((line: string) => line.trim())
+          .join('\n');
 
         actions.push({
           uid: createRandomNumber(6),

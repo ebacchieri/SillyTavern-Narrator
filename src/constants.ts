@@ -114,4 +114,7 @@ export const DEFAULT_TASK_DESCRIPTION = `## Your Role as Narrator
 {{userInstructions}}
 {{else}}
 Generate 6 possible next actions for the current scene.
-{{/if}}`;
+{{/if}}
+
+Always respond in valid XML format, as shown in the example below.
+`;
