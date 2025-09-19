@@ -106,7 +106,7 @@ export const MainPopup: FC<MainPopupProps> = ({ onClose }) => {
           instructName: profile.instruct,
           syspromptName: profile.sysprompt,
           ignoreCharacterFields: !settings.contextToSend.charCard,
-          ignoreWorldInfo: true, // We handle world info manually
+          ignoreWorldInfo: !settings.contextToSend.worldInfo,
           ignoreAuthorNote: !settings.contextToSend.authorNote,
           maxContext:
             settings.maxContextType === 'custom'
@@ -394,6 +394,14 @@ export const MainPopup: FC<MainPopupProps> = ({ onClose }) => {
                     onChange={(e) => updateContextToSend('charCard', e.target.checked)}
                   />
                   Char Card
+                </label>
+                <label className="checkbox_label">
+                  <input
+                    type="checkbox"
+                    checked={settings.contextToSend.worldInfo}
+                    onChange={(e) => updateContextToSend('worldInfo', e.target.checked)}
+                  />
+                  World Info
                 </label>
                 
                 <label className="checkbox_label">
