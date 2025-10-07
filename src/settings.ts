@@ -10,7 +10,7 @@ import { st_echo } from 'sillytavern-utils-lib/config';
 
 export const extensionName = 'SillyTavern-Narrator';
 export const VERSION = '0.0.1';
-export const FORMAT_VERSION = 'F_1.2';
+export const FORMAT_VERSION = 'F_1.3'; // bumped for auto-mode addition
 
 export const KEYS = {
   EXTENSION: 'narrator',
@@ -65,7 +65,7 @@ export interface ExtensionSettings {
   contextToSend: ContextToSend;
   prompts: {
     stDescription: PromptSetting;
-    possibleSteps: PromptSetting;  
+    possibleSteps: PromptSetting;
     responseRules: PromptSetting;
     taskDescription: PromptSetting;
     [key: string]: PromptSetting;
@@ -74,6 +74,11 @@ export interface ExtensionSettings {
   promptPresets: Record<string, PromptPreset>;
   mainContextTemplatePreset: string;
   mainContextTemplatePresets: Record<string, MainContextTemplatePreset>;
+
+  // NEW: Auto-mode
+  autoMode: boolean;
+  autoModePrompt: string; // user default prompt used when auto-mode fires (empty = fallback generic)
+  autoModeDelayMs: number; // delay after message completion before triggering generation
 }
 
 export type SystemPromptKey =
@@ -152,7 +157,7 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
     default: {
       prompts: [
         {
-          promptName: 'chatHistory', // this is exception, since chat history is not exactly a prompt
+          promptName: 'chatHistory', // exception: chat history is not exactly a prompt
           enabled: true,
           role: 'system',
         },
@@ -174,21 +179,20 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
       ],
     },
   },
+
+  // NEW defaults for auto-mode
+  autoMode: false,
+  autoModePrompt: '',
+  autoModeDelayMs: 1200,
 };
 
 export function convertToVariableName(key: string) {
-  // Remove non-ASCII and special characters
   const normalized = key.replace(/[^\w\s]/g, '');
-
-  // Split by whitespace and filter out empty parts
   const parts = normalized.split(/\s+/).filter(Boolean);
-
   let firstWordPrinted = false;
   return parts
     .map((word, _) => {
-      // Remove numbers from the start of words
       const cleanWord = word.replace(/^\d+/, '');
-      // Convert to camelCase
       if (cleanWord) {
         const result = firstWordPrinted
           ? `${cleanWord[0].toUpperCase()}${cleanWord.slice(1).toLowerCase()}`
@@ -198,13 +202,16 @@ export function convertToVariableName(key: string) {
         }
         return result;
       }
-
       return '';
     })
     .join('');
 }
 
 export const settingsManager = new ExtensionSettingsManager<ExtensionSettings>(KEYS.EXTENSION, DEFAULT_SETTINGS);
+
+export function isAutoModeEnabled(): boolean {
+  return !!settingsManager.getSettings().autoMode;
+}
 
 export async function initializeSettings(): Promise<void> {
   return new Promise((resolve, _reject) => {
@@ -231,30 +238,45 @@ export async function initializeSettings(): Promise<void> {
               return migrated;
             },
           },
-          {
+            {
             from: 'F_1.1',
             to: 'F_1.2',
             action(previous) {
               const migrated = { ...previous };
               migrated.formatVersion = 'F_1.2';
 
-              // The exact string of the old default content for taskDescription
               const OLD_TASK_DESCRIPTION = `## Rules
 - Don't suggest already existing or suggested entries.
 
 ## Your Task
 {{userInstructions}}`;
 
-              // Check if the user's current setting is the old default.
               if (migrated.prompts.taskDescription.content === OLD_TASK_DESCRIPTION) {
-                // If so, update it to the new default.
                 migrated.prompts.taskDescription.content = DEFAULT_PROMPT_CONTENTS.taskDescription;
                 migrated.prompts.taskDescription.isDefault = true;
               } else {
-                // Otherwise, it's a custom prompt, so just mark it as not default.
                 migrated.prompts.taskDescription.isDefault = false;
               }
 
+              return migrated;
+            },
+          },
+          {
+            from: 'F_1.2',
+            to: 'F_1.3',
+            action(previous) {
+              // Add new auto-mode fields if missing
+              const migrated: any = { ...previous };
+              migrated.formatVersion = 'F_1.3';
+              if (typeof migrated.autoMode !== 'boolean') {
+                migrated.autoMode = DEFAULT_SETTINGS.autoMode;
+              }
+              if (typeof migrated.autoModePrompt !== 'string') {
+                migrated.autoModePrompt = DEFAULT_SETTINGS.autoModePrompt;
+              }
+              if (typeof migrated.autoModeDelayMs !== 'number') {
+                migrated.autoModeDelayMs = DEFAULT_SETTINGS.autoModeDelayMs;
+              }
               return migrated;
             },
           },
