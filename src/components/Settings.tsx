@@ -304,7 +304,73 @@ export const NarratorSettings: FC = () => {
   const isDefaultSystemPromptSelected = SYSTEM_PROMPT_KEYS.includes(selectedSystemPrompt);
 
   return (
-    <div className="world-info-recommender-settings">
+      <div className="world-info-recommender-settings">
+          {/* Auto-mode Section (inserted before Main Context Template) */}
+          <div style={{ marginTop: '5px', marginBottom: '15px' }}>
+              <div className="title_restorable">
+                  <span>Auto-mode</span>
+              </div>
+              <div
+                  style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: '10px',
+                      marginTop: '6px',
+                  }}
+              >
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <input
+                          type="checkbox"
+                          checked={settings.autoMode}
+                          onChange={(e) =>
+                              updateAndRefresh((s) => {
+                                  s.autoMode = e.target.checked;
+                              })
+                          }
+                      />
+                      <span style={{ fontSize: '0.9em' }}>Enable</span>
+                  </label>
+
+                  <input
+                      type="text"
+                      style={{
+                          flex: '1 1 280px',
+                          minWidth: '240px',
+                          padding: '4px 6px',
+                      }}
+                      placeholder="Auto-mode prompt (leave empty for generic)"
+                      value={settings.autoModePrompt}
+                      onChange={(e) =>
+                          updateAndRefresh((s) => {
+                              s.autoModePrompt = e.target.value;
+                          })
+                      }
+                  />
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '0.9em' }}>Delay (ms)</span>
+                      <input
+                          type="number"
+                          min={0}
+                          style={{ width: '110px', padding: '4px 6px' }}
+                          value={settings.autoModeDelayMs}
+                          onChange={(e) =>
+                              updateAndRefresh((s) => {
+                                  const v = parseInt(e.target.value, 10);
+                                  if (!Number.isNaN(v)) {
+                                      s.autoModeDelayMs = Math.max(0, v);
+                                  }
+                              })
+                          }
+                      />
+                  </label>
+              </div>
+              <div style={{ fontSize: '0.75em', opacity: 0.8, marginTop: '4px' }}>
+                  When enabled, after each completed assistant/character message a narration suggestion list is generated,
+                  one option is chosen at random, and published to the chat automatically.
+              </div>
+          </div>
       <div style={{ marginTop: '10px' }}>
         <div className="title_restorable">
           <span>Main Context Template</span>

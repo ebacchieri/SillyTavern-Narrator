@@ -7,6 +7,7 @@ import {
 } from './constants.js';
 import { globalContext } from './generate.js';
 import { st_echo } from 'sillytavern-utils-lib/config';
+import { initAutoMode } from './autoMode.js'; // ADDED
 
 export const extensionName = 'SillyTavern-Narrator';
 export const VERSION = '0.0.1';
@@ -77,8 +78,8 @@ export interface ExtensionSettings {
 
   // NEW: Auto-mode
   autoMode: boolean;
-  autoModePrompt: string; // user default prompt used when auto-mode fires (empty = fallback generic)
-  autoModeDelayMs: number; // delay after message completion before triggering generation
+  autoModePrompt: string;
+  autoModeDelayMs: number;
 }
 
 export type SystemPromptKey =
@@ -157,13 +158,13 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
     default: {
       prompts: [
         {
-          promptName: 'chatHistory', // exception: chat history is not exactly a prompt
+          promptName: 'chatHistory',
           enabled: true,
           role: 'system',
         },
         {
           promptName: 'stDescription',
-          enabled: true,
+            enabled: true,
           role: 'system',
         },
         {
@@ -238,7 +239,7 @@ export async function initializeSettings(): Promise<void> {
               return migrated;
             },
           },
-            {
+          {
             from: 'F_1.1',
             to: 'F_1.2',
             action(previous) {
@@ -265,7 +266,6 @@ export async function initializeSettings(): Promise<void> {
             from: 'F_1.2',
             to: 'F_1.3',
             action(previous) {
-              // Add new auto-mode fields if missing
               const migrated: any = { ...previous };
               migrated.formatVersion = 'F_1.3';
               if (typeof migrated.autoMode !== 'boolean') {
@@ -283,6 +283,12 @@ export async function initializeSettings(): Promise<void> {
         ],
       })
       .then((_result) => {
+        // Initialize auto-mode hooks after settings are fully ready.
+        try {
+          initAutoMode();
+        } catch (e) {
+          console.warn('[SillyTavern-Narrator] Failed to initialize auto-mode:', e);
+        }
         resolve();
       })
       .catch((error) => {
@@ -297,6 +303,12 @@ export async function initializeSettings(): Promise<void> {
             if (result) {
               settingsManager.resetSettings();
               st_echo('success', `[${extensionName}] Settings reset. Reloading may be required.`);
+              // Attempt auto-mode init after reset (safe due to internal guard).
+              try {
+                initAutoMode();
+              } catch (e) {
+                console.warn('[SillyTavern-Narrator] Auto-mode init after reset failed:', e);
+              }
               resolve();
             }
           });
