@@ -92,11 +92,8 @@ async function generateAndPublishAuto() {
  */
 function isCompletedCharacterMessage(node: HTMLElement): boolean {
   if (!node) return false;
-  // Common SillyTavern message class convention: "mes" (adjust if different).
   if (!node.classList?.contains('mes')) return false;
-  // Heuristic: assistant messages may have a data attribute or a class; adjust as necessary.
   if (node.dataset?.role === 'assistant' || node.classList.contains('assistantMes')) {
-    // If streaming adds an in-progress marker, ensure it's done (placeholder logic).
     if (node.classList.contains('streaming')) return false;
     return true;
   }
@@ -121,12 +118,12 @@ function setupDomObserver() {
       for (const node of Array.from(m.addedNodes)) {
         if (node instanceof HTMLElement && isCompletedCharacterMessage(node)) {
           const delay = settingsManager.getSettings().autoModeDelayMs;
-            if (pendingTimer) {
-              clearTimeout(pendingTimer);
-            }
-            pendingTimer = window.setTimeout(() => {
-              generateAndPublishAuto();
-            }, Math.max(0, delay));
+          if (pendingTimer) {
+            clearTimeout(pendingTimer);
+          }
+          pendingTimer = window.setTimeout(() => {
+            generateAndPublishAuto();
+          }, Math.max(0, delay));
         }
       }
     }
@@ -143,23 +140,21 @@ export function initAutoMode() {
   if (autoModeInitialized) return;
   autoModeInitialized = true;
 
-  // Try event-based first if SillyTavern exposes a bus; otherwise fallback to MutationObserver.
   const context: any = SillyTavern.getContext();
   const bus = context?.eventBus || context?.EventBus;
   if (bus?.on) {
-    // Hypothetical event names; adjust to actual ones available in core.
     const candidateEvents = ['message:assistant:final', 'message:received:assistant', 'chat:message:complete'];
     candidateEvents.forEach(ev => {
       try {
         bus.on(ev, (_payload: any) => {
           if (!settingsManager.getSettings().autoMode) return;
-          const delay = settingsManager.getSettings().autoModeDelayMs;
-          if (pendingTimer) {
-            clearTimeout(pendingTimer);
-          }
-          pendingTimer = window.setTimeout(() => {
-            generateAndPublishAuto();
-          }, Math.max(0, delay));
+            const delay = settingsManager.getSettings().autoModeDelayMs;
+            if (pendingTimer) {
+              clearTimeout(pendingTimer);
+            }
+            pendingTimer = window.setTimeout(() => {
+              generateAndPublishAuto();
+            }, Math.max(0, delay));
         });
       } catch {
         /* ignore registration failures */
@@ -204,13 +199,13 @@ export function ensureAutoModeToggle(container: HTMLElement) {
     checkbox.addEventListener('change', () => {
       const s = settingsManager.getSettings();
       s.autoMode = checkbox.checked;
-      settingsManager.saveSettings(s);
+      settingsManager.saveSettings(); // removed argument
     });
 
     promptInput.addEventListener('change', () => {
       const s = settingsManager.getSettings();
       s.autoModePrompt = promptInput.value;
-      settingsManager.saveSettings(s);
+      settingsManager.saveSettings(); // removed argument
     });
 
     delayInput.addEventListener('change', () => {
@@ -218,11 +213,10 @@ export function ensureAutoModeToggle(container: HTMLElement) {
       const v = parseInt((delayInput as HTMLInputElement).value, 10);
       if (!Number.isNaN(v)) {
         s.autoModeDelayMs = Math.max(0, v);
-        settingsManager.saveSettings(s);
+        settingsManager.saveSettings(); // removed argument
       }
     });
   } else {
-    // Refresh state if already present
     const inputs = wrapper.querySelectorAll('input');
     if (inputs.length >= 3) {
       const s = settingsManager.getSettings();
