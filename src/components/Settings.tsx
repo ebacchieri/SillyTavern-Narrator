@@ -1,4 +1,4 @@
-import React, { FC, useState, useMemo, useCallback } from 'react';
+import React, { FC, useState, useMemo, useCallback, useEffect } from 'react';
 import { st_echo } from 'sillytavern-utils-lib/config';
 import {
   PresetItem,
@@ -23,19 +23,19 @@ import {
 } from '../settings.js';
 import { useForceUpdate } from '../hooks/useForceUpdate.js';
 
-const globalContext = SillyTavern.getContext();
+// NOTE: moved inside component to avoid hard failure if SillyTavern not ready at import time.
+// const globalContext = SillyTavern.getContext();
 
-/**
- * A React component to manage the World Info Recommender settings UI.
- * This component replaces the vanilla TS setup script.
- */
 export const NarratorSettings: FC = () => {
+  const globalContext: any =
+    (window as any).SillyTavern?.getContext?.() ||
+    {}; // fallback empty object if not yet ready
+
   // --- State Management ---
   const forceUpdate = useForceUpdate();
   const settings = settingsManager.getSettings();
   const [selectedSystemPrompt, setSelectedSystemPrompt] = useState<string>(SYSTEM_PROMPT_KEYS[0]);
 
-  // Centralized function to update state and persist settings
   const updateAndRefresh = useCallback(
     (updater: (currentSettings: ExtensionSettings) => void) => {
       const currentSettings = settingsManager.getSettings();
@@ -46,7 +46,32 @@ export const NarratorSettings: FC = () => {
     [forceUpdate],
   );
 
-  // --- Derived Data for UI (Memoized for performance) ---
+  // --- Diagnostics (Auto-mode visibility) ---
+  useEffect(() => {
+    const el = document.getElementById('narrator-auto-mode-section');
+    const style = el ? window.getComputedStyle(el) : null;
+    // Only log once per mount / settings change cluster
+    console.log('[NarratorSettings][debug] Render cycle', {
+      autoModeFlag: settings.autoMode,
+      autoModePrompt: settings.autoModePrompt,
+      autoModeDelayMs: settings.autoModeDelayMs,
+      autoModeElementFound: !!el,
+      elementDisplay: style?.display,
+      elementVisibility: style?.visibility,
+      elementOffsetHeight: el?.offsetHeight,
+    });
+
+    // If element exists but has zero height, highlight it for debugging
+    if (el && el.offsetHeight === 0) {
+      el.style.outline = '2px dashed #ffbf00';
+      el.style.outlineOffset = '2px';
+      console.warn(
+        '[NarratorSettings][debug] Auto-mode section found but collapsed (height=0). Check parent CSS rules.',
+      );
+    }
+  }, [settings.autoMode, settings.autoModePrompt, settings.autoModeDelayMs]);
+
+  // --- Derived Data ---
   const mainContextPresetItems = useMemo(
     (): PresetItem[] =>
       Object.keys(settings.mainContextTemplatePresets).map((key) => ({
@@ -81,14 +106,14 @@ export const NarratorSettings: FC = () => {
         selectValue: prompt.role,
         selectOptions: [
           { value: 'user', label: 'User' },
-          { value: 'assistant', label: 'Assistant' },
+            { value: 'assistant', label: 'Assistant' },
           { value: 'system', label: 'System' },
         ],
       };
     });
   }, [settings.mainContextTemplatePreset, settings.mainContextTemplatePresets, settings.prompts]);
 
-  // --- Handlers for Main Context Template ---
+  // --- Main Context Handlers ---
   const handleMainContextPresetChange = (newValue?: string) => {
     updateAndRefresh((s) => {
       s.mainContextTemplatePreset = newValue ?? 'default';
@@ -114,14 +139,10 @@ export const NarratorSettings: FC = () => {
         enabled: item.enabled,
         role: (item.selectValue as MessageRole) ?? 'user',
       }));
-
-      //  Create a new preset object and a new presets object
-      // instead of mutating the existing one. This ensures useMemo detects the change.
       const updatedPreset = {
         ...s.mainContextTemplatePresets[s.mainContextTemplatePreset],
         prompts: newPrompts,
       };
-
       s.mainContextTemplatePresets = {
         ...s.mainContextTemplatePresets,
         [s.mainContextTemplatePreset]: updatedPreset,
@@ -130,11 +151,9 @@ export const NarratorSettings: FC = () => {
   };
 
   const handleRestoreMainContextDefault = async () => {
-    const confirm = await globalContext.Popup.show.confirm('Restore default', 'Are you sure?');
-    if (!confirm) return;
-
+    const confirmed = await globalContext?.Popup?.show?.confirm?.('Restore default', 'Are you sure?');
+    if (!confirmed) return;
     updateAndRefresh((s) => {
-      // Create a new presets object instead of mutating a property on the old one.
       s.mainContextTemplatePresets = {
         ...s.mainContextTemplatePresets,
         default: structuredClone(DEFAULT_SETTINGS.mainContextTemplatePresets['default']),
@@ -143,26 +162,20 @@ export const NarratorSettings: FC = () => {
     });
   };
 
-  // --- Handlers for System Prompts ---
+  // --- System Prompts Handlers ---
   const handleSystemPromptsChange = (newItems: PresetItem[]) => {
     updateAndRefresh((s) => {
       const newPrompts: Record<string, PromptSetting> = {};
       const oldPrompts = s.prompts;
       const oldKeys = Object.keys(oldPrompts);
       const newKeys = newItems.map((item) => item.value);
-
-      // Rebuild the prompts list from newItems
       newKeys.forEach((key) => {
         newPrompts[key] = oldPrompts[key] ?? { content: '', isDefault: false, label: key };
       });
-
       // @ts-ignore
-      s.prompts = newPrompts; // This part is correct and immutable.
-
-      // Identify deleted prompts
+      s.prompts = newPrompts;
       const deletedKeys = oldKeys.filter((key) => !newKeys.includes(key));
       if (deletedKeys.length > 0) {
-        //  Create a new main context presets object with updated prompt arrays.
         const updatedPresets = Object.fromEntries(
           Object.entries(s.mainContextTemplatePresets).map(([presetName, preset]) => [
             presetName,
@@ -187,9 +200,7 @@ export const NarratorSettings: FC = () => {
       st_echo('error', `Prompt name already exists: ${variableName}`);
       return { confirmed: false };
     }
-
     updateAndRefresh((s) => {
-      // Create a new prompts object.
       s.prompts = {
         ...s.prompts,
         [variableName]: {
@@ -198,8 +209,6 @@ export const NarratorSettings: FC = () => {
           label: value,
         },
       };
-
-      // Create a new presets object where each preset has a new, updated prompts array.
       s.mainContextTemplatePresets = Object.fromEntries(
         Object.entries(s.mainContextTemplatePresets).map(([presetName, preset]) => [
           presetName,
@@ -224,17 +233,13 @@ export const NarratorSettings: FC = () => {
       st_echo('error', `Prompt name already exists: ${variableName}`);
       return { confirmed: false };
     }
-
     updateAndRefresh((s) => {
-      // Create a new prompts object by removing the old key and adding the new one.
       const { [oldValue]: renamedPrompt, ...restPrompts } = s.prompts;
       // @ts-ignore
       s.prompts = {
         ...restPrompts,
         [variableName]: { ...renamedPrompt, label: newValue },
       };
-
-      // Create a new presets object with updated prompt names.
       s.mainContextTemplatePresets = Object.fromEntries(
         Object.entries(s.mainContextTemplatePresets).map(([presetName, preset]) => [
           presetName,
@@ -254,7 +259,6 @@ export const NarratorSettings: FC = () => {
     updateAndRefresh((s) => {
       const prompt = s.prompts[selectedSystemPrompt];
       if (prompt) {
-        // Create a new prompts object with an updated prompt object.
         s.prompts = {
           ...s.prompts,
           [selectedSystemPrompt]: {
@@ -272,11 +276,12 @@ export const NarratorSettings: FC = () => {
   const handleRestoreSystemPromptDefault = async () => {
     const prompt = settings.prompts[selectedSystemPrompt];
     if (!prompt) return st_echo('warning', 'No prompt selected.');
-
-    const confirm = await globalContext.Popup.show.confirm('Restore Default', `Restore default for "${prompt.label}"?`);
-    if (confirm) {
+    const confirmed = await globalContext?.Popup?.show?.confirm?.(
+      'Restore Default',
+      `Restore default for "${prompt.label}"?`,
+    );
+    if (confirmed) {
       updateAndRefresh((s) => {
-        // Create a new prompts object with the restored content.
         s.prompts = {
           ...s.prompts,
           [selectedSystemPrompt]: {
@@ -290,10 +295,12 @@ export const NarratorSettings: FC = () => {
 
   // --- Reset Handler ---
   const handleResetEverything = async () => {
-    const confirm = await globalContext.Popup.show.confirm('Reset Everything', 'Are you sure? This cannot be undone.');
-    if (confirm) {
-      settingsManager.resetSettings(); // This saves automatically
-      // forceUpdate is sufficient here because the next render will get a completely new settings object.
+    const confirmed = await globalContext?.Popup?.show?.confirm?.(
+      'Reset Everything',
+      'Are you sure? This cannot be undone.',
+    );
+    if (confirmed) {
+      settingsManager.resetSettings();
       forceUpdate();
       st_echo('success', 'Settings reset. The UI has been updated.');
     }
@@ -304,73 +311,75 @@ export const NarratorSettings: FC = () => {
   const isDefaultSystemPromptSelected = SYSTEM_PROMPT_KEYS.includes(selectedSystemPrompt);
 
   return (
-      <div className="world-info-recommender-settings">
-          {/* Auto-mode Section (inserted before Main Context Template) */}
-          <div style={{ marginTop: '5px', marginBottom: '15px' }}>
-              <div className="title_restorable">
-                  <span>Auto-mode</span>
-              </div>
-              <div
-                  style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      alignItems: 'center',
-                      gap: '10px',
-                      marginTop: '6px',
-                  }}
-              >
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <input
-                          type="checkbox"
-                          checked={settings.autoMode}
-                          onChange={(e) =>
-                              updateAndRefresh((s) => {
-                                  s.autoMode = e.target.checked;
-                              })
-                          }
-                      />
-                      <span style={{ fontSize: '0.9em' }}>Enable</span>
-                  </label>
+    <div className="world-info-recommender-settings">
+      {/* Auto-mode Section */}
+      <div id="narrator-auto-mode-section" style={{ marginTop: '5px', marginBottom: '15px' }}>
+        <div className="title_restorable">
+          <span>Auto-mode</span>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: '10px',
+            marginTop: '6px',
+          }}
+        >
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <input
+              type="checkbox"
+              checked={settings.autoMode}
+              onChange={(e) =>
+                updateAndRefresh((s) => {
+                  s.autoMode = e.target.checked;
+                })
+              }
+            />
+            <span style={{ fontSize: '0.9em' }}>Enable</span>
+          </label>
 
-                  <input
-                      type="text"
-                      style={{
-                          flex: '1 1 280px',
-                          minWidth: '240px',
-                          padding: '4px 6px',
-                      }}
-                      placeholder="Auto-mode prompt (leave empty for generic)"
-                      value={settings.autoModePrompt}
-                      onChange={(e) =>
-                          updateAndRefresh((s) => {
-                              s.autoModePrompt = e.target.value;
-                          })
-                      }
-                  />
+          <input
+            type="text"
+            style={{
+              flex: '1 1 280px',
+              minWidth: '240px',
+              padding: '4px 6px',
+            }}
+            placeholder="Auto-mode prompt (leave empty for generic)"
+            value={settings.autoModePrompt}
+            onChange={(e) =>
+              updateAndRefresh((s) => {
+                s.autoModePrompt = e.target.value;
+              })
+            }
+          />
 
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '0.9em' }}>Delay (ms)</span>
-                      <input
-                          type="number"
-                          min={0}
-                          style={{ width: '110px', padding: '4px 6px' }}
-                          value={settings.autoModeDelayMs}
-                          onChange={(e) =>
-                              updateAndRefresh((s) => {
-                                  const v = parseInt(e.target.value, 10);
-                                  if (!Number.isNaN(v)) {
-                                      s.autoModeDelayMs = Math.max(0, v);
-                                  }
-                              })
-                          }
-                      />
-                  </label>
-              </div>
-              <div style={{ fontSize: '0.75em', opacity: 0.8, marginTop: '4px' }}>
-                  When enabled, after each completed assistant/character message a narration suggestion list is generated,
-                  one option is chosen at random, and published to the chat automatically.
-              </div>
-          </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '0.9em' }}>Delay (ms)</span>
+            <input
+              type="number"
+              min={0}
+              style={{ width: '110px', padding: '4px 6px' }}
+              value={settings.autoModeDelayMs}
+              onChange={(e) =>
+                updateAndRefresh((s) => {
+                  const v = parseInt(e.target.value, 10);
+                  if (!Number.isNaN(v)) {
+                    s.autoModeDelayMs = Math.max(0, v);
+                  }
+                })
+              }
+            />
+          </label>
+        </div>
+        <div style={{ fontSize: '0.75em', opacity: 0.8, marginTop: '4px' }}>
+          When enabled, after each completed assistant/character message a narration suggestion list is generated, one
+          option is chosen at random, and published to the chat automatically.
+        </div>
+      </div>
+
+      {/* Main Context Template */}
       <div style={{ marginTop: '10px' }}>
         <div className="title_restorable">
           <span>Main Context Template</span>
@@ -403,6 +412,7 @@ export const NarratorSettings: FC = () => {
 
       <hr style={{ margin: '10px 0' }} />
 
+      {/* Prompt Templates */}
       <div style={{ marginTop: '10px' }}>
         <div className="title_restorable">
           <span>Prompt Templates</span>
@@ -440,8 +450,8 @@ export const NarratorSettings: FC = () => {
 
       <div style={{ textAlign: 'center', marginTop: '15px' }}>
         <STButton className="danger_button" style={{ width: 'auto' }} onClick={handleResetEverything}>
-          <i style={{ marginRight: '10px' }} className="fa-solid fa-triangle-exclamation" />I messed up, reset
-          everything
+          <i style={{ marginRight: '10px' }} className="fa-solid fa-triangle-exclamation" />
+          I messed up, reset everything
         </STButton>
       </div>
     </div>
